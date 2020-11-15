@@ -7,6 +7,10 @@ enum state
     BLOCKED
 };
 
+static const char *priorityString[] = {
+    "HIGH", "NORMAL", "LOW"
+};
+
 enum priority
 {
     HIGH,
@@ -16,13 +20,6 @@ enum priority
 
 typedef enum state state;
 typedef enum priority priority;
-
-char* priorityString[3]
-{
-    "HIGH",
-    "NORMAL",
-    "LOW"
-};
 
 typedef struct PCB
 {

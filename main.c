@@ -52,19 +52,6 @@ PCB* fetchProcessFromReadyQueueRemove(List** rQ)
     return NULL;
 }
 
-// PCB* fetchBlockedProcess(List** srQ)
-// {
-//     for(int i = 0;i < MAX_BLOCK_QUEUE;++i)
-//     {
-//         if(List_count(srQ[i]) != 0)
-//         {
-//             return List_trim(srQ[i]);
-//         }
-//     }
-
-//     return NULL;
-// }
-
 // Searches process in all queues
 PCB* searchProcessIfFoundRemove(List** Q,int qSize, int PID)
 {
@@ -81,24 +68,6 @@ PCB* searchProcessIfFoundRemove(List** Q,int qSize, int PID)
 
     return NULL;
 }
-
-// PCB* removeReadyProcess(List** rQ,int PID)
-// {
-//     PCB* process = NULL;
-//     for(int i = 0; i < MAX_READY_QUEUE; ++i)
-//     {   
-//         PCB temp;
-//         temp.PID = input - '0';
-//         process = List_search(rQ[i],&compare,&temp);
-//         if(process != NULL)
-//         {
-//             PCB* removed = List_remove(rQ[i]);
-//             free(removed);
-//             break;
-//         }
-//     }
-//     return process;
-// }
 
 int countProcess(List** rq,List**srq)
 {
@@ -125,6 +94,8 @@ int main()
     List* ReadyQueues[3];
     List* SendReceiveWaitQueue[2];
     List* allQueues[5];
+    Semaphore sem[5];
+    int semCount = 0;
     int globalPID = 1;
     char input;
     char msg[40];
@@ -307,40 +278,54 @@ int main()
             {
                 printf("Enter PID of the process\n");
                 scanf("%c",input);
+                input = input - '0';
                 printf("Enter and message(max 40 chars)\n");
                 scanf("%s",msg);
 
-                if(countProcess(ReadyQueues,SendReceiveWaitQueue) == 0)
+                if((input == 0 && running == NULL) || (input == running->PID))
                 {
-                    printf("There is no process to send message\n");
+                    printf("Can't send to running process\n");
+                }
+                else if(countProcess(ReadyQueues,SendReceiveWaitQueue) == 0)
+                {
+                    printf("There is no process to send message\n"); // only init is in the system
                 }
                 else
                 {
-                    PCB* ret = searchProcessIfFoundRemove(allQueues,MAX_READY_QUEUE + MAX_BLOCK_QUEUE,input);
-                    if(ret == NULL)
+                    if(input == 0)
                     {
-                        printf("No process with this PID lives in this system\n");
+                        List_prepend(init_MSG,msg);
+                        printf("Message has been sent to init\n");
                     }
                     else
                     {
-                        if(List_prepend(ret->proc_message, msg) == -1)
+                        PCB* ret = searchProcessIfFoundRemove(allQueues,MAX_READY_QUEUE + MAX_BLOCK_QUEUE,input);
+                        if(ret == NULL)
                         {
-                            printf("Buffer overflow in Receiving process,message is getting dumped\n");
+                            printf("No process with this PID lives in this system\n");
                         }
                         else
                         {
-                            printf("Message has been sent to process %d\n",input);
-                            running->processState = BLOCKED;
-                            List_prepend(SendReceiveWaitQueue[0],running);
-                            PCB* fetched = fetchProcessFromReadyQueueRemove(ReadyQueues);
-                            if(fetched == NULL)
+                            if(List_prepend(ret->proc_message, msg) == -1)
                             {
-                                printf("Init is running\n");
+                                printf("Buffer overflow in Receiving process,message is getting dumped\n");
                             }
                             else
                             {
-                                fetched->processState = RUNNING;
-                                running = fetched;
+                                printf("Message has been sent to process %d\n",input);
+                                running->processState = BLOCKED;
+                                List_prepend(SendReceiveWaitQueue[0],running);
+
+                                PCB* fetched = fetchProcessFromReadyQueueRemove(ReadyQueues);
+                                if(fetched == NULL)
+                                {
+                                    printf("Init is running\n");
+                                }
+                                else
+                                {
+                                    fetched->processState = RUNNING;
+                                    running = fetched;
+                                }
                             }
                         }
                     }
@@ -349,7 +334,21 @@ int main()
 
             case 'R':
             {
-                if(List_count(running->proc_message) == 0) // RUNNING PROCESS HAS NO MESSAGE
+                if(running == NULL)
+                {
+                    if(List_count(init_MSG) == 0)
+                    {
+                        printf("There are no messages to be received for init, not blocking\n");
+                    }
+                    else if ()
+                    {
+                        char* received = List_trim(init_MSG);
+                        printf("Received message %s\n",received);
+                        free(received);
+                    }
+                    
+                }
+                else if(List_count(running->proc_message) == 0) // RUNNING PROCESS HAS NO MESSAGE
                 {
                     printf("There are no messages to be received, blocking the running process\n");
                     running->processState = BLOCKED;
@@ -358,6 +357,7 @@ int main()
                     if(fetched == NULL)
                     {
                         printf("Init is running\n");
+                        running = NULL;
                     }
                     else
                     {
@@ -367,9 +367,9 @@ int main()
                 }
                 else // RUNNING PROCESS HAS A MESSAGE
                 {
-                    char* msg = List_trim(running->proc_message);
-                    printf("Received message %s\n",msg);
-                    free(msg);
+                    char* received = List_trim(running->proc_message);
+                    printf("Received message %s\n",received);
+                    free(received);
                 }   
             }
 
@@ -380,34 +380,236 @@ int main()
                 printf("Enter and reply message(max 40 chars)\n");
                 scanf("%s",msg);
 
-                PCB* ret = searchProcessIfFoundRemove(processSendWaitQueue,1,input);
-                if(ret == NULL)
+                if(input == 0)
                 {
-                    printf("No process with this PID blocked on \"Send\" in this system\n");
+                    printf("Replying to init\n");
+                    List_prepend(init_MSG,msg);
                 }
                 else
                 {
-                    ret->processState = READY;
-                    if(List_prepend(ReadyQueues[running->priority] == 0)
+                    PCB* ret = searchProcessIfFoundRemove(processSendWaitQueue,1,input);
+                    if(ret == NULL)
                     {
-                        printf("Running process %d has been placed back into %s priority queue", running->PID, priorityString[running->priority]);
-                        if(List_prepend(ret->proc_message, msg) == -1)
+                        printf("No process with this PID blocked on \"Send\" in this system\n");
+                    }
+                    else
+                    {
+                        ret->processState = READY;
+                        if(List_prepend(ReadyQueues[running->priority],running) == 0)
                         {
-                            printf("Buffer overflow in Sending process,reply is getting dumped\n");
+                            printf("Running process %d has been placed back into %s priority queue", running->PID, priorityString[running->priority]);
+                            if(List_prepend(ret->proc_message, msg) == -1)
+                            {
+                                printf("Buffer overflow in Sending process,reply is getting dumped\n");
+                            }
+                            else
+                            {
+                                printf("Reply has been sent to process %d\n",input);
+                            }
+                            
+                        }
+                    }
+                }
+            }
+
+            case 'N':
+            {
+                int input1, input2;
+
+                printf("Enter SID of the semaphore\n");
+                scanf("%c",input1);
+                input1 = input1 - '0';
+
+                printf("Enter value of the semaphore\n");
+                scanf("%c",input2);
+                input2 = input2 - '0';
+
+                if(sem[input1] == NULL)
+                {
+                    printf("This semaphore has been already created\n");
+                }
+                else
+                {
+                    printf("Created semaphore with id: %d , value: %d\n",input1,input2);
+                    sem[input1] = malloc(sizeof(Semaphore));
+                    sem[semCount].value = input2;
+                    sem->processListWaitingOnSemaphore = List_create();
+                }
+            }
+            case 'P':
+            {
+                int input1;
+                printf("Enter SID of the semaphore\n");
+                scanf("%c",input1);
+                input1 = input1 - '0';
+                if(input >= 0 && input < 5 )
+                {
+                    --sem[input1].value;
+                    if(sem[input1].value > -1)
+                    {
+                        printf("Process goes into the semaphore, no blocking, success\n",input1,input2);
+                    }
+                    else
+                    {
+                        if(running == NULL)
+                        {
+                            printf("Failure all semaphores are taken,running process needs to block but init cannot be blocked, failure\n")
                         }
                         else
                         {
-                            printf("Reply has been sent to process %d\n",input);
+                             printf("Process is blocked on the semaphore\n",input1);
+                            List_prepend(sem[input1].processListWaitingOnSemaphore,running);
+
+                            PCB* fetched = fetchProcessFromReadyQueueRemove(ReadyQueues);
+                            if(fetched == NULL)
+                            {
+                                printf("Init is running now\n");
+                                running = NULL;
+                            }
+                            else
+                            {
+                                fetched->processState = RUNNING;
+                                running = fetched;
+                                printf("Process %d is running now\n",input);
+                            }
+                        }
+
+                    }
+                }
+                else
+                {
+                    printf("SID is out of the range\n");
+                }
+            }
+            case 'V':
+            {
+                int input1;
+                printf("Enter SID of the semaphore\n");
+                scanf("%c",input1);
+                input1 = input1 - '0';
+                if(input >= 0 && input < 5 )
+                {
+                    int preINC = sem[input1].value;
+                    ++sem[input1].value;
+                    if(preINC < 0)
+                    {
+                        PCB* fetched = List_trim(sem[input1].processListWaitingOnSemaphore);
+                        printf("Unblocking the process: %d on this semaphore\n",fetched->PID);
+                        List_prepend(ReadyQueues[fetched->priority],fetched);
+                    }
+                    else
+                    {
+                        printf("There are no blocked processes on this semaphore\n");
+                    }
+                    
+            }
+            case 'I':
+            {
+                int input1;
+                printf("Enter PID of the process\n");
+                scanf("%c",input1);
+                input1 = input1 - '0';
+
+                if(input1 == 0)
+                {
+                    printf("Process is init\n");
+                    break;
+                }
+                if(input1 == running->PID)
+                {
+                    printf("Process is currently running has priority %d\n",running->priority);
+                    break;
+                }
+                for(int i = 0; i < MAX_READY_QUEUE; ++i)
+                {   
+                    PCB temp;
+                    temp.PID = input1;
+                    PCB* process = List_search(ReadyQueues[i],&compare,&temp);
+                    if(process != NULL)
+                    {
+                        printf("Process id:%d is in %s priority Ready queue\n",process->PID,process->priority);
+                    }
+                }
+                for(int i = 0; i < MAX_BLOCK_QUEUE; ++i)
+                {   
+                    PCB temp;
+                    temp.PID = input1;
+                    PCB* process = List_search(SendReceiveWaitQueue[i],&compare,&temp);
+                    if(process != NULL)
+                    {
+                        if(i == 0)
+                        {
+                            printf("Process id:%d has %s priority and blocked on send\n",process->PID,process->priority);
+                        }
+                        else
+                        {
+                            printf("Process id:%d has %s priority and blocked on receive\n",process->PID,process->priority);
                         }
                         
                     }
                 }
+                for(int i = 0; i < 5; ++i)
+                {   
+                    if(sem[i] != NULL)
+                    {
+                        PCB temp;
+                        temp.PID = input1;
+                        PCB* process = List_search(sem[i].processListWaitingOnSemaphore,&compare,&temp);
+                        if(process != NULL)
+                        {
+                                printf("Process id:%d has %s priority and waiting on semaphore %d\n",process->PID,process->priority,i);
+                        }
+                    }
+                }
+                break;
             }
-            case 'N':
-            case 'P':
-            case 'V':
-            case 'I':
             case 'T':
+            {
+                if(running == NULL)
+                {
+                    printf("Process init is running\n");
+                    break;
+                }
+                for(int i = 0; i < MAX_READY_QUEUE; ++i)
+                {   
+                    PCB* process = List_first(ReadyQueues[i]);
+                    while(process != NULL)
+                    {
+                        printf("Process id:%d is in %s priority Ready queue\n",process->PID,process->priority);
+                        process = List_next(ReadyQueues[i]);
+                    }
+                }
+                for(int i = 0; i < MAX_BLOCK_QUEUE; ++i)
+                {   
+                    PCB* process = List_first(SendReceiveWaitQueue[i]);
+                    while(process != NULL)
+                    {
+                        if(i == 0)
+                        {
+                            printf("Process id:%d has %s priority and blocked on send\n",process->PID,process->priority);
+                            process = List_next(SendReceiveWaitQueue[i]);
+                        }
+                        else
+                        {
+                            printf("Process id:%d has %s priority and blocked on receive\n",process->PID,process->priority);
+                            process = List_next(SendReceiveWaitQueue[i]);
+                        }
+                    }
+                }
+                for(int i = 0; i < 5; ++i)
+                {   
+                    if(sem[i] != NULL)
+                    {
+                        PCB* process = List_first(sem[i].processListWaitingOnSemaphore);
+                        if(process != NULL)
+                        {
+                                printf("Process id:%d has %s priority and waiting on semaphore %d\n",process->PID,process->priority,i);
+                                process = List_next(sem[i].processListWaitingOnSemaphore);
+                        }
+                    }
+                }
+                break;
+            }
         }
         if(running)
     }

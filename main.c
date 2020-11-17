@@ -178,7 +178,7 @@ int main()
                 char* t;
                 printf("Enter priority 0(HIGH),1(NORMAL),2(LOW)\n");
                 scanf("%s",c);
-                while ((ch = getchar()) != '\n' && ch != EOF);
+                //while ((ch = getchar()) != '\n' && ch != EOF);
                 int input = atoi(c);
 
                 if(input == HIGH || input == NORMAL || input == LOW)
@@ -189,13 +189,7 @@ int main()
                     pcbP->processState = READY;
                     pcbP->proc_message = List_create();
 
-                    if(running == NULL)
-                    {
-                        ++globalPID;
-                        running = pcbP;
-                        printf("Process PID:%d successfully created and running\n",pcbP->PID);
-                    }
-                    else if(List_prepend(ReadyQueues[input],pcbP) == 0)
+                  if(List_prepend(ReadyQueues[input],pcbP) == 0)
                     {
                         ++globalPID;
                         printf("Process PID:%d successfully created\n",pcbP->PID);
@@ -287,19 +281,7 @@ int main()
                         List_free(running->proc_message,&freeProcMsg);
                         printf("Killed the running process %d\n",input);
                         free(running);
-
-                        PCB* fetched = fetchProcessFromReadyQueueRemove(ReadyQueues);
-                        if(fetched == NULL)
-                        {
-                            printf("Init is running now\n");
-                            running = NULL;
-                        }
-                        else
-                        {
-                            fetched->processState = RUNNING;
-                            running = fetched;
-                            printf("Process %d is running now\n",input);
-                        }
+                        running = NULL;
                     }
                     else
                     {
@@ -319,7 +301,7 @@ int main()
                 break;
             }
 
-            case 'E': // SO DONE
+            case 'E':
             {
                 if(running == NULL)
                 {
@@ -338,22 +320,9 @@ int main()
                 else
                 {
                     printf("Killed the running process %d\n",running->PID);
-                    //if(running->proc_message != NULL)
                     List_free(running->proc_message,&freeProcMsg);
                     free(running);
-
-                    PCB* fetched = fetchProcessFromReadyQueueRemove(ReadyQueues);
-                    if(fetched == NULL)
-                    {
-                        printf("Init is running now\n");
-                        running = NULL;
-                    }
-                    else
-                    {
-                        fetched->processState = RUNNING;
-                        running = fetched;
-                        printf("Process %d is running now\n",running->PID);
-                    }
+                    running = NULL;
                 }
                 break;
             }
@@ -377,18 +346,16 @@ int main()
                         printf("Running process %d has been placed back into %s priority queue", running->PID, priorityString[running->priority]);
 
                         PCB* fetched = fetchProcessFromReadyQueueRemove(ReadyQueues);
-                        if(fetched == NULL) // technically impossible
-                        {
-                            printf("Init is running now\n");
-                            running = NULL;
-                        }
-                        else
-                        {
-                            fetched->processState = RUNNING;
-                            running = fetched;
-                            printf("Process %d is running now\n",running->PID);
-                        }
+                        fetched->processState = RUNNING;
+                        running = fetched;
+                        printf("Process %d is running now\n",running->PID);
                     }
+                    else
+                    {
+                        running->processState = RUNNING;
+                        printf("Buffer size problem ready queue is full\n");
+                    }
+                    
                 }
                 break;
             }
@@ -437,7 +404,7 @@ int main()
                                 if(List_prepend(ret->proc_message, msgMal) == -1)
                                 {
                                     free(msgMal);
-                                    printf("Buffer overflow, message is getting dumped\n");
+                                    printf("Buffer size problem, message is getting dumped\n");
                                 }
                                 else
                                 {
@@ -457,7 +424,7 @@ int main()
                         if(List_prepend(init_MSG,msgMal) == -1)
                         {
                             free(msgMal);
-                            printf("Buffer overflow ,message is getting dumped\n");
+                            printf("Buffer size problem ,message is getting dumped\n");
                         }
                         else
                         {
@@ -465,18 +432,14 @@ int main()
                             printf("Blocking the running process PID:%d\n",running->PID);
 
                             running->processState = BLOCKED;
-                            List_prepend(SendReceiveWaitQueues[0],running);
-
-                            PCB* fetched = fetchProcessFromReadyQueueRemove(ReadyQueues);
-                            if(fetched == NULL)
+                            if(List_prepend(SendReceiveWaitQueues[0],running) == 0)
                             {
+                                printf("Running process moved into (S) blocked queue\n");
                                 running = NULL;
-                                printf("Init is running\n");
                             }
                             else
-                            {
-                                fetched->processState = RUNNING;
-                                running = fetched;
+                            {   running->processState = RUNNING;
+                                printf("Buffer size problem can't block running process\n");
                             }
                         }
                     }
@@ -498,7 +461,7 @@ int main()
                             if(List_prepend(ret->proc_message, msgMal) == -1)
                             {
                                 free(msgMal);
-                                printf("Buffer overflow message is getting dumped\n");
+                                printf("Buffer size problem message is getting dumped\n");
                             }
                             else
                             {
@@ -506,24 +469,13 @@ int main()
                                 running->processState = BLOCKED;
                                 if(List_prepend(SendReceiveWaitQueues[0],running) == -1)
                                 {
-                                    printf("Buffer overflow can't block running thread\n");
+                                    printf("Buffer size problem can't block running thread\n");
+                                    running->processState = RUNNING;
                                 }
                                 else
                                 {
                                     printf("Running thread has been blocked\n");
-                                }
-                                
-
-                                PCB* fetched = fetchProcessFromReadyQueueRemove(ReadyQueues);
-                                if(fetched == NULL)
-                                {
                                     running = NULL;
-                                    printf("Init is running\n");
-                                }
-                                else
-                                {
-                                    fetched->processState = RUNNING;
-                                    running = fetched;
                                 }
                             }
                         }
@@ -549,37 +501,37 @@ int main()
                 }
                 else
                 {
-                    if(List_count(running->proc_message) == 0) // RUNNING PROCESS HAS NO MESSAGE
+                    if(List_count(running->proc_message) == 0)
                     {
                         printf("There are no messages to be received, blocking the running process\n");
                         running->processState = BLOCKED;
-                        if(List_prepend(SendReceiveWaitQueues[1],running) == -1)
+                        if(List_prepend(processReceiveWaitQueue,running) == -1)
                         {
                             running->processState = RUNNING;
-                            printf("Buffer overflow, can't block the running thread\n");
+                            printf("Buffer size problem, can't block the running thread\n");
                         }
                         else
                         {
                             printf("Running thread has been blocked\n");
-                        }
-                        
-                        PCB* fetched = fetchProcessFromReadyQueueRemove(ReadyQueues);
-                        if(fetched == NULL)
-                        {
-                            printf("Init is running\n");
-                            running = NULL;
-                        }
-                        else
-                        {
-                            fetched->processState = RUNNING;
-                            running = fetched;
+                            PCB* fetched = fetchProcessFromReadyQueueRemove(ReadyQueues);
+                            if(fetched == NULL)
+                            {
+                                printf("Init is running\n");
+                                running = NULL;
+                            }
+                            else
+                            {
+                                fetched->processState = RUNNING;
+                                running = fetched;
+                            }
                         }
                     }
                     else
                     {
                         char* received = List_trim(running->proc_message);
                         printf("Received message %s\n",received);
-                        free(received);
+                        if(received != NULL)
+                            free(received);
                     } 
                 }
                 break;  
@@ -600,42 +552,57 @@ int main()
                 {
                     char* msgMal = malloc(sizeof(char)*40);
                     strcpy(msgMal,msg);
-                    printf("Replying to init\n");
                     if(List_prepend(init_MSG,msgMal) == -1)
                     {
-                        printf("Buffer overflow can't reply to init\n");
+                        printf("Buffer size problem can't reply to init\n");
                     }
+                    else
+                    {
+                        printf("Reply has sent to init\n");
+                    }
+                    
                 }
                 else
                 {
-                    PCB* ret = searchProcessAndRemove((List**)processSendWaitQueue,1,input);
+                    PCB* ret = searchProcessAndRemove((List**)&processSendWaitQueue,1,input);
                     if(ret == NULL)
                     {
                         printf("No process with this PID blocked on Send() in this system\n");
                     }
-                    else
+                    else // found process
                     {
                         ret->processState = READY;
                         if(List_prepend(ReadyQueues[running->priority],ret) == 0)
                         {
-                            printf("Sender PID: %d has been unblocked and put into %s priority queue", ret->PID, priorityString[running->priority]);
+                            printf("Sender PID: %d has been unblocked and put into %s priority ready queue\n", ret->PID, priorityString[running->priority]);
+
                             char* msgMal = malloc(sizeof(char)*40);
                             strcpy(msgMal,msg);
                             if(List_prepend(ret->proc_message, msg) == -1)
                             {
                                 free(msgMal);
-                                printf("Buffer overflow message is getting dumped\n");
+                                printf("Buffer size problem message is getting dumped\n");
                             }
                             else
                             {
-                                printf("Reply has been sent to process %d\n",input);
+                                printf("Reply has been sent to the process\n");
                             }
-                            
+                                                
                         }
                         else
                         {
+                            printf("Buffer size problem, can't place process back to ready queue, will try to put it back to it's original queue\n");
                             ret->processState = BLOCKED;
-                            printf("Buffer overflow, can't move process to ready queue\n");
+                            if(List_prepend(processSendWaitQueue,ret) == -1)
+                            {
+                                printf("Buffer size problem, can't place process back (S)blocked queue, dumping process\n");
+                                List_free(ret->proc_message,&freeProcMsg);
+                                free(ret);
+                            }
+                            else
+                            {
+                                 printf("Placed process back to the original (S)blocked queue\n");
+                            }
                         }
                         
                     }
@@ -845,7 +812,7 @@ int main()
                 else
                 {
                     printf("Process init waiting\n");
-                    printf("Process PID:%d and %s priority is RUNNING\n",running->PID,priorityString[running->priority]);
+                    printf("Process PID:%d is RUNNING\n",running->PID,priorityString[running->priority]);
                 } 
                 for(int i = 0; i < MAX_READY_QUEUE; ++i)
                 {   
@@ -886,6 +853,17 @@ int main()
                     }
                 }
                 break;
+            }
+        }
+
+        if(running == NULL)
+        {
+            PCB* fetched = fetchProcessFromReadyQueueRemove(ReadyQueues);
+            if(fetched != NULL)
+            {
+                fetched->processState = RUNNING;
+                running = fetched;
+                printf("Process %d is running now\n",input);
             }
         }
 

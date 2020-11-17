@@ -2,6 +2,7 @@
 #include "Simulation.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #define MAX_READY_QUEUE 3
 #define MAX_BLOCK_QUEUE 2
 #define SEM_LENGTH 5
@@ -71,7 +72,27 @@ PCB* fetchProcessFromReadyQueueRemove(List** rQ)
 }
 
 // Searches process in all queues
-PCB* searchProcessIfFoundRemove(List** Q,int qSize, int PID)
+PCB* searchProcess(List** Q,int qSize, int PID)
+{
+    for(int i = 0; i < qSize; ++i)
+    {   
+        if(Q[i] != NULL)
+        {
+            PCB temp;
+            temp.PID = PID;
+            List_first(Q[i]);
+            PCB* process = List_search(Q[i],&compare,&temp);
+            if(process != NULL)
+            {
+                return process;
+            }
+        }
+    }
+
+    return NULL;
+}
+
+PCB* searchProcessAndRemove(List** Q,int qSize, int PID)
 {
     for(int i = 0; i < qSize; ++i)
     {   
@@ -149,14 +170,14 @@ int main()
     while(1)
     {
         char ch;
-        scanf("%c",&ch);
+        fgets(&ch, 2, stdin);
         switch (ch)
         {
             case 'C': //DONE
             {
                 char c[10];
                 printf("Enter priority 0(HIGH),1(NORMAL),2(LOW)\n");
-                scanf("%s",c);
+                1
 
                 int input = atoi(c);
 
@@ -223,7 +244,7 @@ int main()
             {
                 char c[10];
                 printf("Enter PID of the process to kill.\n");
-                scanf("%s",c);
+                fgets(c, 11, stdin);
                 int input = atoi(c);
 
                 if(countProcess(ReadyQueues,SendReceiveWaitQueues,sem) == 0 && input == 0) // only init is alive and killed
@@ -258,7 +279,7 @@ int main()
                 }
                 else // Killing in readyQ or blockedQ
                 {
-                    PCB* ret = searchProcessIfFoundRemove(allQueues,MAX_READY_QUEUE + MAX_BLOCK_QUEUE + SEM_LENGTH,input);
+                    PCB* ret = searchProcessAndRemove(allQueues,MAX_READY_QUEUE + MAX_BLOCK_QUEUE + SEM_LENGTH,input);
                     if(ret != NULL)
                     {
                         if(ret->proc_message != NULL)
@@ -273,7 +294,7 @@ int main()
                 break;
             }
 
-            case 'E':
+            case 'E': //DONE
             {
                 if(countProcess(ReadyQueues,SendReceiveWaitQueues,sem) == 0 && running == NULL)
                 {
@@ -345,9 +366,9 @@ int main()
                 char c[10];
                 char msg[40];
                 printf("Enter PID of the process\n");
-                scanf("%s",c);
+                fgets(c, 11, stdin);
                 printf("Enter and reply message(max 40 chars)\n");
-                scanf("%s",msg);
+                fgets(msg, 41, stdin);
 
                 int input = atoi(c);
 
@@ -368,15 +389,18 @@ int main()
                     }
                     else
                     {
-                        PCB* ret = searchProcessIfFoundRemove(allQueues,MAX_READY_QUEUE + MAX_BLOCK_QUEUE + SEM_LENGTH,input);
+                        PCB* ret = searchProcess(allQueues,MAX_READY_QUEUE + MAX_BLOCK_QUEUE + SEM_LENGTH,input);
                         if(ret == NULL)
                         {
                             printf("No process with this PID lives in this system\n");
                         }
                         else
                         {
-                            if(List_prepend(ret->proc_message, msg) == -1)
+                            char* msgMal = malloc(sizeof(char)*40);
+                            strcpy(msgMal,msg);
+                            if(List_prepend(ret->proc_message, msgMal) == -1)
                             {
+                                free(msgMal);
                                 printf("Buffer overflow in Receiving process,message is getting dumped\n");
                             }
                             else
@@ -449,9 +473,9 @@ int main()
                 char c[10];
                 char msg[40];
                 printf("Enter PID of the process\n");
-                scanf("%s",c);
+                fgets(c, 11, stdin);
                 printf("Enter and reply message(max 40 chars)\n");
-                scanf("%s",msg);
+                fgets(msg, 41, stdin);
 
                 int input = atoi(c);
 
@@ -462,7 +486,7 @@ int main()
                 }
                 else
                 {
-                    PCB* ret = searchProcessIfFoundRemove((List**)processSendWaitQueue,1,input);
+                    PCB* ret = searchProcessAndRemove((List**)processSendWaitQueue,1,input);
                     if(ret == NULL)
                     {
                         printf("No process with this PID blocked on \"Send\" in this system\n");
@@ -470,11 +494,14 @@ int main()
                     else
                     {
                         ret->processState = READY;
-                        if(List_prepend(ReadyQueues[running->priority],running) == 0)
+                        if(List_prepend(ReadyQueues[running->priority],ret) == 0)
                         {
-                            printf("Running process %d has been placed back into %s priority queue", running->PID, priorityString[running->priority]);
+                            printf("Sender id: %d has been unblocked and put into %s priority queue", ret->PID, priorityString[running->priority]);
+                            char* msgMal = malloc(sizeof(char)*40);
+                            strcpy(msgMal,msg);
                             if(List_prepend(ret->proc_message, msg) == -1)
                             {
+                                free(msgMal);
                                 printf("Buffer overflow in Sending process,reply is getting dumped\n");
                             }
                             else
@@ -494,11 +521,11 @@ int main()
                 char c2[10];
 
                 printf("Enter SID of the semaphore\n");
-                scanf("%s",c1);
+                fgets(c1, 11, stdin);
                 int input1 = atoi(c1);
 
                 printf("Enter value of the semaphore\n");
-                scanf("%s",c2);
+                fgets(c2, 11, stdin);
                 int input2 = atoi(c2);
                 if(input1 <0 || input1>5)
                 {
@@ -523,7 +550,7 @@ int main()
             {
                 char c[10];
                 printf("Enter SID of the semaphore\n");
-                scanf("%s",c);
+                fgets(c, 11, stdin);
                 int input1 = atoi(c);
 
                 if(sem[input1] == NULL)
@@ -576,7 +603,7 @@ int main()
             {
                 char c[10];
                 printf("Enter SID of the semaphore\n");
-                scanf("%s",c);
+                1
                 int input1 = atoi(c);
                 
                 if(sem[input1] == NULL)
@@ -606,7 +633,7 @@ int main()
             {
                 char c[10];
                 printf("Enter PID of the process\n");
-                scanf("%s",c);
+                1
                 int input1 = atoi(c);
 
                 if(input1 == 0)

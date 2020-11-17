@@ -172,7 +172,7 @@ int main()
         scanf("%c",&ch);
         switch (ch)
         {
-            case 'C': // SO DONE
+            case 'C':
             {
                 char c[10];
                 char* t;

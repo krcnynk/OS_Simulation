@@ -1,4 +1,9 @@
-Ready queues are FCFS, if there is HIGH priority process in the system it can hog the CPU.
+
+Mr. Harinder's list object file doesn't have enough heads for the various lists, so i have added a criteria to creating processes. It can give exceptions if there is not enough heads.
+
+Ready queues are FCFS, if there is HIGH priority process in the system it can hog the CPU(will not let any normal or low priority into the system).
 
 Semaphore implementation can be found at https://en.wikipedia.org/wiki/Semaphore_(programming). Dijkstra
 At sem value = 0 ,P blocks and V unblocks when value is negative
+
+Send and Reply works on non whitespaced strings, any whitespace may cause trouble. i.e S(send) 2(processID) THISMUSTBETHEFORMAT(message)

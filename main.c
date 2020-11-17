@@ -177,7 +177,7 @@ int main()
             {
                 char c[10];
                 printf("Enter priority 0(HIGH),1(NORMAL),2(LOW)\n");
-                1
+                fgets(c, 11, stdin);
 
                 int input = atoi(c);
 
@@ -603,7 +603,7 @@ int main()
             {
                 char c[10];
                 printf("Enter SID of the semaphore\n");
-                1
+                fgets(c, 11, stdin);
                 int input1 = atoi(c);
                 
                 if(sem[input1] == NULL)
@@ -633,7 +633,7 @@ int main()
             {
                 char c[10];
                 printf("Enter PID of the process\n");
-                1
+                fgets(c, 11, stdin);
                 int input1 = atoi(c);
 
                 if(input1 == 0)

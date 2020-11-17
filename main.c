@@ -618,13 +618,13 @@ int main()
                         ret->processState = READY;
                         if(List_prepend(ReadyQueues[running->priority],ret) == 0)
                         {
-                            printf("Sender id: %d has been unblocked and put into %s priority queue", ret->PID, priorityString[running->priority]);
+                            printf("Sender PID: %d has been unblocked and put into %s priority queue", ret->PID, priorityString[running->priority]);
                             char* msgMal = malloc(sizeof(char)*40);
                             strcpy(msgMal,msg);
                             if(List_prepend(ret->proc_message, msg) == -1)
                             {
                                 free(msgMal);
-                                printf("Buffer overflow in Sending process,reply is getting dumped\n");
+                                printf("Buffer overflow message is getting dumped\n");
                             }
                             else
                             {
@@ -634,6 +634,7 @@ int main()
                         }
                         else
                         {
+                            ret->processState = BLOCKED;
                             printf("Buffer overflow, can't move process to ready queue\n");
                         }
                         
@@ -665,7 +666,7 @@ int main()
                 }
                 else
                 {
-                    printf("Created semaphore with id: %d , value: %d\n",input1,input2);
+                    printf("Created semaphore with PID: %d , value: %d\n",input1,input2);
                     sem[input1] = malloc(sizeof(Semaphore));
                     sem[input1]->value = input2;
                     sem[input1]->processListWaitingOnSemaphore = List_create();
@@ -805,12 +806,12 @@ int main()
                     {
                         if(i == 0)
                         {
-                            printf("Process id:%d has %s priority and blocked on send\n",process->PID,priorityString[process->priority]);
+                            printf("Process PID:%d has %s priority and blocked on send\n",process->PID,priorityString[process->priority]);
                             goto jump;
                         }
                         else
                         {
-                            printf("Process id:%d has %s priority and blocked on receive\n",process->PID,priorityString[process->priority]);
+                            printf("Process PID:%d has %s priority and blocked on receive\n",process->PID,priorityString[process->priority]);
                             goto jump;
                         }
                         
@@ -826,7 +827,7 @@ int main()
                         PCB* process = List_search(sem[i]->processListWaitingOnSemaphore,&compare,&temp);
                         if(process != NULL)
                         {
-                                printf("Process id:%d has %s priority and waiting on semaphore %d\n",process->PID,priorityString[process->priority],i);
+                                printf("Process PID:%d has %s priority and waiting on semaphore %d\n",process->PID,priorityString[process->priority],i);
                                 goto jump;
                         }
                     }
@@ -844,14 +845,14 @@ int main()
                 else
                 {
                     printf("Process init waiting\n");
-                    printf("Process id:%d and %s priority is RUNNING\n",running->PID,priorityString[running->priority]);
+                    printf("Process PID:%d and %s priority is RUNNING\n",running->PID,priorityString[running->priority]);
                 } 
                 for(int i = 0; i < MAX_READY_QUEUE; ++i)
                 {   
                     PCB* process = List_first(ReadyQueues[i]);
                     while(process != NULL)
                     {
-                        printf("Process id:%d is in %s priority READY queue\n",process->PID,priorityString[process->priority]);
+                        printf("Process PID:%d is in %s priority READY queue\n",process->PID,priorityString[process->priority]);
                         process = List_next(ReadyQueues[i]);
                     }
                 }
@@ -862,12 +863,12 @@ int main()
                     {
                         if(i == 0)
                         {
-                            printf("Process id:%d has %s priority and BLOCKED on SEND\n",process->PID,priorityString[process->priority]);
+                            printf("Process PID:%d has %s priority and BLOCKED on SEND\n",process->PID,priorityString[process->priority]);
                             process = List_next(SendReceiveWaitQueues[i]);
                         }
                         else
                         {
-                            printf("Process id:%d has %s priority and BLOCKED on RECEIVE\n",process->PID,priorityString[process->priority]);
+                            printf("Process PID:%d has %s priority and BLOCKED on RECEIVE\n",process->PID,priorityString[process->priority]);
                             process = List_next(SendReceiveWaitQueues[i]);
                         }
                     }
@@ -879,7 +880,7 @@ int main()
                         PCB* process = List_first(sem[i]->processListWaitingOnSemaphore);
                         while(process != NULL)
                         {
-                                printf("Process id:%d has %s priority and BLOCKED on semaphore %d\n",process->PID,priorityString[process->priority],i);
+                                printf("Process PID:%d has %s priority and BLOCKED on semaphore %d\n",process->PID,priorityString[process->priority],i);
                                 process = List_next(sem[i]->processListWaitingOnSemaphore);
                         }
                     }
@@ -893,7 +894,7 @@ int main()
             PCB* lastPCB = List_last(processReceiveWaitQueue);
             if(List_count(lastPCB->proc_message) > 0)
             {
-                printf("Unblocking receiving process id:%d",lastPCB->PID);
+                printf("Unblocking receiving process PID:%d",lastPCB->PID);
                 while(List_count(lastPCB->proc_message) > 0)
                 {
                     char* message = List_trim(lastPCB->proc_message);

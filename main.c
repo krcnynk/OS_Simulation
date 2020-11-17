@@ -170,14 +170,14 @@ int main()
     while(1)
     {
         char ch;
-        fgets(&ch, 2, stdin);
+        scanf("%c",&ch);
         switch (ch)
         {
             case 'C': //DONE
             {
                 char c[10];
                 printf("Enter priority 0(HIGH),1(NORMAL),2(LOW)\n");
-                fgets(c, 11, stdin);
+                scanf("%s",c);
 
                 int input = atoi(c);
 
@@ -244,7 +244,7 @@ int main()
             {
                 char c[10];
                 printf("Enter PID of the process to kill.\n");
-                fgets(c, 11, stdin);
+                scanf("%s",c);
                 int input = atoi(c);
 
                 if(countProcess(ReadyQueues,SendReceiveWaitQueues,sem) == 0 && input == 0) // only init is alive and killed
@@ -366,9 +366,9 @@ int main()
                 char c[10];
                 char msg[40];
                 printf("Enter PID of the process\n");
-                fgets(c, 11, stdin);
+                scanf("%s",c);
                 printf("Enter and reply message(max 40 chars)\n");
-                fgets(msg, 41, stdin);
+                scanf("%s",msg);
 
                 int input = atoi(c);
 
@@ -473,9 +473,9 @@ int main()
                 char c[10];
                 char msg[40];
                 printf("Enter PID of the process\n");
-                fgets(c, 11, stdin);
+                scanf("%s",c);
                 printf("Enter and reply message(max 40 chars)\n");
-                fgets(msg, 41, stdin);
+                scanf("%s",msg);
 
                 int input = atoi(c);
 
@@ -521,11 +521,11 @@ int main()
                 char c2[10];
 
                 printf("Enter SID of the semaphore\n");
-                fgets(c1, 11, stdin);
+                scanf("%s",c1);
                 int input1 = atoi(c1);
 
                 printf("Enter value of the semaphore\n");
-                fgets(c2, 11, stdin);
+                scanf("%s",c2);
                 int input2 = atoi(c2);
                 if(input1 <0 || input1>5)
                 {
@@ -550,7 +550,7 @@ int main()
             {
                 char c[10];
                 printf("Enter SID of the semaphore\n");
-                fgets(c, 11, stdin);
+                scanf("%s",c);
                 int input1 = atoi(c);
 
                 if(sem[input1] == NULL)
@@ -603,7 +603,7 @@ int main()
             {
                 char c[10];
                 printf("Enter SID of the semaphore\n");
-                fgets(c, 11, stdin);
+                scanf("%s",c);
                 int input1 = atoi(c);
                 
                 if(sem[input1] == NULL)
@@ -633,7 +633,7 @@ int main()
             {
                 char c[10];
                 printf("Enter PID of the process\n");
-                fgets(c, 11, stdin);
+                scanf("%s",c);
                 int input1 = atoi(c);
 
                 if(input1 == 0)

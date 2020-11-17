@@ -531,7 +531,7 @@ int main()
                 }
                 break;
             }
-            case 'R':
+            case 'R': //Looks good to me
             {
                 if(running == NULL)
                 {
@@ -542,38 +542,50 @@ int main()
                     else
                     {
                         char* received = List_trim(init_MSG);
-                        printf("Received message %s\n",received);
+                        printf("Init received message %s\n",received);
                         free(received);
                     }
                     
                 }
-                else if(List_count(running->proc_message) == 0) // RUNNING PROCESS HAS NO MESSAGE
+                else
                 {
-                    printf("There are no messages to be received, blocking the running process\n");
-                    running->processState = BLOCKED;
-                    List_prepend(SendReceiveWaitQueues[1],running);
-                    PCB* fetched = fetchProcessFromReadyQueueRemove(ReadyQueues);
-                    if(fetched == NULL)
+                    if(List_count(running->proc_message) == 0) // RUNNING PROCESS HAS NO MESSAGE
                     {
-                        printf("Init is running\n");
-                        running = NULL;
+                        printf("There are no messages to be received, blocking the running process\n");
+                        running->processState = BLOCKED;
+                        if(List_prepend(SendReceiveWaitQueues[1],running) == -1)
+                        {
+                            running->processState = RUNNING;
+                            printf("Buffer overflow, can't block the running thread\n");
+                        }
+                        else
+                        {
+                            printf("Running thread has been blocked\n");
+                        }
+                        
+                        PCB* fetched = fetchProcessFromReadyQueueRemove(ReadyQueues);
+                        if(fetched == NULL)
+                        {
+                            printf("Init is running\n");
+                            running = NULL;
+                        }
+                        else
+                        {
+                            fetched->processState = RUNNING;
+                            running = fetched;
+                        }
                     }
                     else
                     {
-                        fetched->processState = RUNNING;
-                        running = fetched;
-                    }
+                        char* received = List_trim(running->proc_message);
+                        printf("Received message %s\n",received);
+                        free(received);
+                    } 
                 }
-                else // RUNNING PROCESS HAS A MESSAGE
-                {
-                    char* received = List_trim(running->proc_message);
-                    printf("Received message %s\n",received);
-                    free(received);
-                } 
                 break;  
             }
 
-            case 'Y':
+            case 'Y': //Reply
             {
                 char c[10];
                 char msg[40];
@@ -586,15 +598,20 @@ int main()
 
                 if(input == 0)
                 {
+                    char* msgMal = malloc(sizeof(char)*40);
+                    strcpy(msgMal,msg);
                     printf("Replying to init\n");
-                    List_prepend(init_MSG,msg);
+                    if(List_prepend(init_MSG,msgMal) == -1)
+                    {
+                        printf("Buffer overflow can't reply to init\n");
+                    }
                 }
                 else
                 {
                     PCB* ret = searchProcessAndRemove((List**)processSendWaitQueue,1,input);
                     if(ret == NULL)
                     {
-                        printf("No process with this PID blocked on \"Send\" in this system\n");
+                        printf("No process with this PID blocked on Send() in this system\n");
                     }
                     else
                     {
@@ -615,6 +632,11 @@ int main()
                             }
                             
                         }
+                        else
+                        {
+                            printf("Buffer overflow, can't move process to ready queue\n");
+                        }
+                        
                     }
                 }
                 break;

@@ -1,0 +1,4 @@
+Ready queues are FCFS, if there is HIGH priority process in the system it can hog the CPU.
+
+Semaphore implementation can be found at https://en.wikipedia.org/wiki/Semaphore_(programming). Dijkstra
+At sem value = 0 ,P blocks and V unblocks when value is negative

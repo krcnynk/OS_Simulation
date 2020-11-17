@@ -189,7 +189,14 @@ int main()
                     pcbP->processState = READY;
                     pcbP->proc_message = List_create();
 
-                  if(List_prepend(ReadyQueues[input],pcbP) == 0)
+                    if(pcbP->proc_message == NULL)
+                    {
+                        printf("Problem while creating message list for a process, dumping the process (Mr. Harinder's List can only contain 10 Heads...)!\n");
+                        free(pcbP);
+                        break;
+                    }
+
+                    if(List_prepend(ReadyQueues[input],pcbP) == 0)
                     {
                         ++globalPID;
                         printf("Process PID:%d successfully created\n",pcbP->PID);
@@ -199,6 +206,7 @@ int main()
                         printf("Process PID:%d cannot be created, %s priority ready buffer is full\n",pcbP->PID, priorityString[pcbP->priority] );
                     }
                 }
+
                 else
                 {
                     printf("This number is not a priority\n");
@@ -219,6 +227,12 @@ int main()
                     forkedP->priority = running->priority;
                     forkedP->processState = READY;
                     forkedP->proc_message = List_create();
+                    if(forkedP->proc_message == NULL)
+                    {
+                        printf("Problem while creating message list for a process, dumping the process (Mr. Harinder's List can only contain 10 Heads...)!\n");
+                        free(forkedP);
+                        break;
+                    }
                     if(List_prepend(ReadyQueues[forkedP->priority],forkedP) == 0)
                     {
                         ++globalPID;
@@ -226,7 +240,8 @@ int main()
                     }
                     else
                     {
-                        List_free(forkedP->proc_message,&freeProcMsg);
+                        if(forkedP->proc_message != NULL)
+                            List_free(forkedP->proc_message,&freeProcMsg);
                         free(forkedP);
                         printf("Process PID:%d cannot be created, %s priority ready buffer is full\n",forkedP->PID,priorityString[forkedP->priority]);
                     }
@@ -319,8 +334,9 @@ int main()
                 }
                 else
                 {
-                    printf("Killed the running process %d\n",running->PID);
-                    List_free(running->proc_message,&freeProcMsg);
+                    printf("Killed the running process %d %p %p\n",running->PID,running->proc_message,running);
+                    if(running->proc_message != NULL)
+                        List_free(running->proc_message,&freeProcMsg);
                     free(running);
                     running = NULL;
                 }
@@ -495,7 +511,8 @@ int main()
                     {
                         char* received = List_trim(init_MSG);
                         printf("Init received message %s\n",received);
-                        free(received);
+                        if(received != NULL)
+                            free(received);
                     }
                     
                 }
@@ -596,7 +613,8 @@ int main()
                             if(List_prepend(processSendWaitQueue,ret) == -1)
                             {
                                 printf("Buffer size problem, can't place process back (S)blocked queue, dumping process\n");
-                                List_free(ret->proc_message,&freeProcMsg);
+                                if(ret->proc_message != NULL)
+                                    List_free(ret->proc_message,&freeProcMsg);
                                 free(ret);
                             }
                             else
@@ -622,11 +640,13 @@ int main()
                 printf("Enter value of the semaphore\n");
                 scanf("%s",c2);
                 int input2 = atoi(c2);
+
                 if(input1 < 0 || input1 > 5)
                 {
-                    printf("Enter a 0-4 SID number\n");
+                    printf("SID number is not between 0 and 5\n");
                     break;
                 }
+                
                 if(sem[input1] != NULL)
                 {
                     printf("This semaphore has been already created\n");
@@ -665,27 +685,22 @@ int main()
                     {
                         if(running == NULL)
                         {
-                            printf("Failure all semaphores are taken,running process needs to block but init cannot be blocked, failure\n");
+                            printf("Running process needs to block but init cannot be blocked, Failure\n");
                         }
                         else
                         {
-                             printf("Process is blocked on the semaphore\n");
-                            List_prepend(sem[input1]->processListWaitingOnSemaphore,running);
-
-                            PCB* fetched = fetchProcessFromReadyQueueRemove(ReadyQueues);
-                            if(fetched == NULL)
+                            running->processState = BLOCKED;
+                            if(List_prepend(sem[input1]->processListWaitingOnSemaphore,running) == 0)
                             {
-                                printf("Init is running now\n");
+                                printf("Process is blocked on the semaphore\n");
                                 running = NULL;
                             }
                             else
                             {
-                                fetched->processState = RUNNING;
-                                running = fetched;
-                                printf("Process %d is running now\n",input);
+                                running->processState = RUNNING;
+                                printf("Buffer problem with the semaphore process list\n");
                             }
                         }
-
                     }
                 }
                 else
@@ -712,13 +727,25 @@ int main()
                     ++sem[input1]->value;
                     if(preINC < 0)
                     {
-                        PCB* fetched = List_trim(sem[input1]->processListWaitingOnSemaphore);
-                        printf("Unblocking the process: %d on this semaphore\n",fetched->PID);
-                        List_prepend(ReadyQueues[fetched->priority],fetched);
+                        PCB* trimmed = List_trim(sem[input1]->processListWaitingOnSemaphore);
+                        if(trimmed == NULL)
+                        {
+                            printf("This semaphore process list doesn't have any process, error\n");
+                            break;
+                        }
+                        if(List_prepend(ReadyQueues[trimmed->priority],trimmed) == 0)
+                        {
+                            printf("Unblocking the process PID: %d on this semaphore\n",trimmed->PID);
+                        }
+                        else
+                        {
+                            printf("Buffer problems while trying to move the process to %s priority ready queue\n",priorityString[trimmed->priority]);
+                        }
+                        
                     }
                     else
                     {
-                        printf("There are no blocked processes on this semaphore\n");
+                        printf("Value of semaphore is not negative(there are no processes waiting)\n");
                     }
                 }
                 break;
@@ -812,7 +839,7 @@ int main()
                 else
                 {
                     printf("Process init waiting\n");
-                    printf("Process PID:%d is RUNNING\n",running->PID,priorityString[running->priority]);
+                    printf("Process PID:%d is RUNNING(has %s priority)\n",running->PID,priorityString[running->priority]);
                 } 
                 for(int i = 0; i < MAX_READY_QUEUE; ++i)
                 {   
@@ -863,7 +890,7 @@ int main()
             {
                 fetched->processState = RUNNING;
                 running = fetched;
-                printf("Process %d is running now\n",input);
+                printf("Process %d is running now\n",running->PID);
             }
         }
 

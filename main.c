@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #define MAX_READY_QUEUE 3
 #define MAX_BLOCK_QUEUE 2
 #define SEM_LENGTH 5
@@ -188,6 +189,7 @@ int main()
                     pcbP->priority = input;
                     pcbP->processState = READY;
                     pcbP->proc_message = List_create();
+                    pcbP->receivedUnblocked = 0;
 
                     if(pcbP->proc_message == NULL)
                     {
@@ -214,7 +216,7 @@ int main()
                 break;
             }
 
-            case 'F': // SO DONE
+            case 'F':
             {
                 if(running == NULL)
                 {
@@ -227,6 +229,7 @@ int main()
                     forkedP->priority = running->priority;
                     forkedP->processState = READY;
                     forkedP->proc_message = List_create();
+                    forkedP->receivedUnblocked = 0;
                     if(forkedP->proc_message == NULL)
                     {
                         printf("Problem while creating message list for a process, dumping the process (Mr. Harinder's List can only contain 10 Heads...)!\n");
@@ -376,28 +379,24 @@ int main()
                 break;
             }
 
-            case 'S': // SO SO DONE
+            case 'S':
             {
                 char c[10];
                 char msg[41];
                 char ch;
                 printf("Enter PID of the process\n");
                 scanf("%9s",c);
-                //while ((ch = getchar()) != '\n' && ch != EOF);
 
                 printf("Enter and send message(max 40 chars)\n");
-                scanf("%40s",msg);
-                //while ((ch = getchar()) != '\n' && ch != EOF);
+                scanf("%s",msg);
 
                 int input = atoi(c);
-                //printf("%s",msg);
-                //printf("%d",input);
 
                 if(running == NULL)
                 {
                     if(input == 0)
                     {
-                        printf("Can't send to running process\n");
+                        printf("Running process(init) can't send to itself\n");
                     }
                     else
                     {
@@ -408,69 +407,67 @@ int main()
                         else
                         {
 
-                            PCB* ret = searchProcess(allQueues,MAX_READY_QUEUE + MAX_BLOCK_QUEUE + SEM_LENGTH,input);
+                            PCB* ret = searchProcess(allQueues,MAX_READY_QUEUE + MAX_BLOCK_QUEUE + SEM_LENGTH,input); // Search all processes for the PID
                             if(ret == NULL)
                             {
                                 printf("No process with this PID lives in this system\n");
                             }
-                            else
+                            else // If a process is found add message to its list
                             {
                                 char* msgMal = malloc(sizeof(char)*40);
                                 strcpy(msgMal,msg);
                                 if(List_prepend(ret->proc_message, msgMal) == -1)
                                 {
                                     free(msgMal);
-                                    printf("Buffer size problem, message is getting dumped\n");
+                                    printf("Error: Buffer size problem, message is getting dumped\n");
                                 }
                                 else
                                 {
                                     printf("Message has been sent to process %d\n",input);
-                                    printf("Init will not be blocked\n");
                                 }
                             }
                         }
                     }
                 }
-                else //(running != NULL)
+                else //If running process was not init
                 {
-                    if(input == 0)
+                    if(input == 0) // running sending to init
                     {
                         char* msgMal = malloc(sizeof(char)*40);
                         strcpy(msgMal,msg);
                         if(List_prepend(init_MSG,msgMal) == -1)
                         {
+                            printf("Error: Buffer size problem ,message is getting dumped\n");
                             free(msgMal);
-                            printf("Buffer size problem ,message is getting dumped\n");
                         }
                         else
                         {
                             printf("Message has been sent to init\n");
-                            printf("Blocking the running process PID:%d\n",running->PID);
 
                             running->processState = BLOCKED;
                             if(List_prepend(SendReceiveWaitQueues[0],running) == 0)
                             {
-                                printf("Running process moved into (S) blocked queue\n");
+                                printf("Blocking the running process PID:%d\n",running->PID);
                                 running = NULL;
                             }
                             else
                             {   running->processState = RUNNING;
-                                printf("Buffer size problem can't block running process\n");
+                                printf("Error: Buffer size problem can't block running process\n");
                             }
                         }
                     }
-                    else if (running->PID == input)
+                    else if (running->PID == input) // running sending to itself
                     {
-                        printf("Can't send to running process\n");
+                        printf("Running process can't send to itself\n");
                     }
-                    else
+                    else // running process sending to some Queue
                     {
                         PCB* ret = searchProcess(allQueues,MAX_READY_QUEUE + MAX_BLOCK_QUEUE + SEM_LENGTH,input);
                         if(ret == NULL)
                         {
                             printf("No process with this PID lives in this system\n");
                         }
-                        else // ret !=NULL
+                        else // Found a process in some Q
                         {
                             char* msgMal = malloc(sizeof(char)*40);
                             strcpy(msgMal,msg);
@@ -499,7 +496,7 @@ int main()
                 }
                 break;
             }
-            case 'R': //Looks good to me
+            case 'R': //Receive
             {
                 if(running == NULL)
                 {
@@ -598,7 +595,7 @@ int main()
                             if(List_prepend(ret->proc_message, msg) == -1)
                             {
                                 free(msgMal);
-                                printf("Buffer size problem message is getting dumped\n");
+                                printf("Error: Buffer size problem message is getting dumped\n");
                             }
                             else
                             {
@@ -612,14 +609,14 @@ int main()
                             ret->processState = BLOCKED;
                             if(List_prepend(processSendWaitQueue,ret) == -1)
                             {
-                                printf("Buffer size problem, can't place process back (S)blocked queue, dumping process\n");
+                                printf("Error : Buffer size problem, can't place process back Send Blocked Queue, dumping process\n");
                                 if(ret->proc_message != NULL)
                                     List_free(ret->proc_message,&freeProcMsg);
                                 free(ret);
                             }
                             else
                             {
-                                 printf("Placed process back to the original (S)blocked queue\n");
+                                 printf("Placed process back to the original Send Blocked Queue\n");
                             }
                         }
                         
@@ -839,7 +836,7 @@ int main()
                 else
                 {
                     printf("Process init waiting\n");
-                    printf("Process PID:%d is RUNNING(has %s priority)\n",running->PID,priorityString[running->priority]);
+                    printf("Process PID:%d is RUNNING(%s priority)\n",running->PID,priorityString[running->priority]);
                 } 
                 for(int i = 0; i < MAX_READY_QUEUE; ++i)
                 {   
@@ -883,7 +880,7 @@ int main()
             }
         }
 
-        if(running == NULL)
+        if(running == NULL)//Find new process
         {
             PCB* fetched = fetchProcessFromReadyQueueRemove(ReadyQueues);
             if(fetched != NULL)
@@ -891,21 +888,61 @@ int main()
                 fetched->processState = RUNNING;
                 running = fetched;
                 printf("Process %d is running now\n",running->PID);
+            }    
+        }
+        else
+        {
+            if(running->proc_message != NULL)
+            {
+                if(running->receivedUnblocked == 1)
+                {
+                    running->receivedUnblocked = 0;
+                    List_last(running->proc_message);
+                    char* rec = List_remove(running->proc_message);
+                    if(rec != NULL)
+                        printf("Running process(Receiver) has received messages:\n");
+                    while(rec != NULL)
+                    {
+                        printf(" %s ",rec);
+                        rec = List_remove(running->proc_message);
+
+                    }
+                }
+                else
+                {
+                    List_last(running->proc_message);
+                    char* rec = List_remove(running->proc_message);
+                    if(rec != NULL)
+                        printf("Running process(Sender) has replies:\n");
+                    while(rec != NULL)
+                    {
+                        printf(" %s ",rec);
+                        rec = List_remove(running->proc_message);
+
+                    }
+                }
             }
         }
-
-        if(List_count(processReceiveWaitQueue) > 0)
+        
+        if(List_count(processReceiveWaitQueue) > 0) // check if anyone is waiting on receive if they have a message waiting unblock
         {
-            PCB* lastPCB = List_last(processReceiveWaitQueue);
-            if(List_count(lastPCB->proc_message) > 0)
+            PCB* lastPCB = List_first(processReceiveWaitQueue);
+            while(lastPCB != NULL)
             {
-                printf("Unblocking receiving process PID:%d",lastPCB->PID);
-                while(List_count(lastPCB->proc_message) > 0)
+                if(lastPCB->proc_message != NULL)
                 {
-                    char* message = List_trim(lastPCB->proc_message);
-                    printf("Messages received %s",message);
-                    free(message);
+                    if(List_count(lastPCB->proc_message) > 0)
+                    {
+                        PCB* removed = List_remove(processReceiveWaitQueue);
+                        assert(removed != NULL);
+                        if(List_prepend(ReadyQueues[removed->priority],removed) == 0)
+                        {
+                            lastPCB->receivedUnblocked = 1;
+                            printf("Unblocking receiving process PID:%d\n",lastPCB->PID);
+                        }
+                    }
                 }
+                lastPCB = List_next(processReceiveWaitQueue);
             }
         }
     }

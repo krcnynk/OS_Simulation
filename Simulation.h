@@ -27,6 +27,7 @@ typedef struct PCB
     int priority;
     state processState;
     List* proc_message;
+    int receivedUnblocked;
 } PCB;
 
 typedef struct Semaphore

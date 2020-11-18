@@ -880,6 +880,28 @@ int main()
             }
         }
 
+        if(List_count(processReceiveWaitQueue) > 0) // check if anyone is waiting on receive if they have a message waiting unblock
+        {
+            PCB* lastPCB = List_first(processReceiveWaitQueue);
+            while(lastPCB != NULL)
+            {
+                if(lastPCB->proc_message != NULL)
+                {
+                    if(List_count(lastPCB->proc_message) > 0)
+                    {
+                        PCB* removed = List_remove(processReceiveWaitQueue);
+                        assert(removed != NULL);
+                        if(List_prepend(ReadyQueues[removed->priority],removed) == 0)
+                        {
+                            lastPCB->receivedUnblocked = 1;
+                            printf("Unblocking receiving process PID:%d\n",lastPCB->PID);
+                        }
+                    }
+                }
+                lastPCB = List_next(processReceiveWaitQueue);
+            }
+        }
+        
         if(running == NULL)//Find new process
         {
             PCB* fetched = fetchProcessFromReadyQueueRemove(ReadyQueues);
@@ -921,28 +943,6 @@ int main()
 
                     }
                 }
-            }
-        }
-        
-        if(List_count(processReceiveWaitQueue) > 0) // check if anyone is waiting on receive if they have a message waiting unblock
-        {
-            PCB* lastPCB = List_first(processReceiveWaitQueue);
-            while(lastPCB != NULL)
-            {
-                if(lastPCB->proc_message != NULL)
-                {
-                    if(List_count(lastPCB->proc_message) > 0)
-                    {
-                        PCB* removed = List_remove(processReceiveWaitQueue);
-                        assert(removed != NULL);
-                        if(List_prepend(ReadyQueues[removed->priority],removed) == 0)
-                        {
-                            lastPCB->receivedUnblocked = 1;
-                            printf("Unblocking receiving process PID:%d\n",lastPCB->PID);
-                        }
-                    }
-                }
-                lastPCB = List_next(processReceiveWaitQueue);
             }
         }
     }

@@ -51,6 +51,7 @@ void closeUP(List** readyQ, List** srQ,Semaphore** s,PCB* runnin)
         {
             if(s[i]->processListWaitingOnSemaphore != NULL)
                 List_free(s[i]->processListWaitingOnSemaphore,&freeProcMsg);
+            free(s[i]);
         }
     }
 
@@ -179,7 +180,7 @@ int main()
                 char* t;
                 printf("Enter priority 0(HIGH),1(NORMAL),2(LOW)\n");
                 scanf("%s",c);
-                //while ((ch = getchar()) != '\n' && ch != EOF);
+
                 int input = atoi(c);
 
                 if(input == HIGH || input == NORMAL || input == LOW)
@@ -193,7 +194,7 @@ int main()
 
                     if(pcbP->proc_message == NULL)
                     {
-                        printf("Problem while creating message list for a process, dumping the process (Mr. Harinder's List can only contain 10 Heads...)!\n");
+                        printf("Error: Problem while creating message list for a process, dumping the process\n");
                         free(pcbP);
                         break;
                     }
@@ -232,7 +233,7 @@ int main()
                     forkedP->receivedUnblocked = 0;
                     if(forkedP->proc_message == NULL)
                     {
-                        printf("Problem while creating message list for a process, dumping the process (Mr. Harinder's List can only contain 10 Heads...)!\n");
+                        printf("Problem while creating message list for a process, dumping the process\n");
                         free(forkedP);
                         break;
                     }
@@ -252,7 +253,7 @@ int main()
                 break;
             }
 
-            case 'K': // SO DONE
+            case 'K':
             {
                 char c[10];
                 printf("Enter PID of the process to kill.\n");
@@ -265,6 +266,7 @@ int main()
                     {
                         printf("Exiting the program\n");
                         closeUP(ReadyQueues,SendReceiveWaitQueues,sem,running);
+                        List_free(init_MSG,&freeProcMsg);
                         return 0;
                     }
                     else if(countProcess(ReadyQueues,SendReceiveWaitQueues,sem) > 0 && input == 0)
@@ -327,6 +329,7 @@ int main()
                     {
                         printf("Exiting the program\n");
                         closeUP(ReadyQueues,SendReceiveWaitQueues,sem,running);
+                        List_free(init_MSG,&freeProcMsg);
                         return 0;
                     }
                     else
@@ -337,7 +340,7 @@ int main()
                 }
                 else
                 {
-                    printf("Killed the running process %d %p %p\n",running->PID,running->proc_message,running);
+                    printf("Killed the running process %d\n",running->PID);
                     if(running->proc_message != NULL)
                         List_free(running->proc_message,&freeProcMsg);
                     free(running);
@@ -362,7 +365,7 @@ int main()
                     running->processState = READY;
                     if(List_prepend(ReadyQueues[running->priority],running) == 0)
                     {
-                        printf("Running process %d has been placed back into %s priority queue", running->PID, priorityString[running->priority]);
+                        printf("Running process %d has been placed back into %s priority queue\n", running->PID, priorityString[running->priority]);
 
                         PCB* fetched = fetchProcessFromReadyQueueRemove(ReadyQueues);
                         fetched->processState = RUNNING;
@@ -586,13 +589,13 @@ int main()
                     else // found process
                     {
                         ret->processState = READY;
-                        if(List_prepend(ReadyQueues[running->priority],ret) == 0)
+                        if(List_prepend(ReadyQueues[ret->priority],ret) == 0)
                         {
-                            printf("Sender PID: %d has been unblocked and put into %s priority ready queue\n", ret->PID, priorityString[running->priority]);
+                            printf("Sender PID: %d has been unblocked and put into %s priority ready queue\n", ret->PID, priorityString[ret->priority]);
 
                             char* msgMal = malloc(sizeof(char)*40);
                             strcpy(msgMal,msg);
-                            if(List_prepend(ret->proc_message, msg) == -1)
+                            if(List_prepend(ret->proc_message, msgMal) == -1)
                             {
                                 free(msgMal);
                                 printf("Error: Buffer size problem message is getting dumped\n");
@@ -671,7 +674,7 @@ int main()
                     break;
                 }
 
-                if(input >= 0 && input < 5 )
+                if(input1 >= 0 && input1 < 5 )
                 {
                     --sem[input1]->value;
                     if(sem[input1]->value > -1)
@@ -718,7 +721,7 @@ int main()
                     printf("This semaphore doesn't exist yet\n");
                     break;
                 }
-                if(input >= 0 && input < 5 )
+                if(input1 >= 0 && input1 < 5 )
                 {
                     int preINC = sem[input1]->value;
                     ++sem[input1]->value;
@@ -727,7 +730,7 @@ int main()
                         PCB* trimmed = List_trim(sem[input1]->processListWaitingOnSemaphore);
                         if(trimmed == NULL)
                         {
-                            printf("This semaphore process list doesn't have any process, error\n");
+                            printf("This semaphore process list doesn't have any process waiting, incremented\n");
                             break;
                         }
                         if(List_prepend(ReadyQueues[trimmed->priority],trimmed) == 0)
@@ -742,7 +745,7 @@ int main()
                     }
                     else
                     {
-                        printf("Value of semaphore is not negative(there are no processes waiting)\n");
+                        printf("Value of semaphore is not negative(there are no processes waiting), incremented\n");
                     }
                 }
                 break;
@@ -919,28 +922,32 @@ int main()
                 if(running->receivedUnblocked == 1)
                 {
                     running->receivedUnblocked = 0;
-                    List_last(running->proc_message);
-                    char* rec = List_remove(running->proc_message);
+                    char* rec = List_trim(running->proc_message);
                     if(rec != NULL)
-                        printf("Running process(Receiver) has received messages:\n");
-                    while(rec != NULL)
                     {
-                        printf(" %s ",rec);
-                        rec = List_remove(running->proc_message);
-
+                        printf("Running process(Receiver) has received messages:\n");
+                        while(rec != NULL)
+                        {
+                            printf(" %s ",rec);
+                            free(rec);
+                            rec = List_trim(running->proc_message);
+                        }
+                        printf("\n");
                     }
                 }
                 else
                 {
-                    List_last(running->proc_message);
-                    char* rec = List_remove(running->proc_message);
+                    char* rec = List_trim(running->proc_message);
                     if(rec != NULL)
-                        printf("Running process(Sender) has replies:\n");
-                    while(rec != NULL)
                     {
-                        printf(" %s ",rec);
-                        rec = List_remove(running->proc_message);
-
+                        printf("Running process(Sender) has replies:\n");
+                        while(rec != NULL)
+                        {
+                            printf(" %s ",rec);
+                            free(rec);
+                            rec = List_trim(running->proc_message);
+                        }
+                        printf("\n");
                     }
                 }
             }

@@ -2,12 +2,15 @@
 Ready queues are FCFS, if there is HIGH priority process in the system it can hog the CPU(will not let any normal or low priority into the system).
 
 Semaphore implementation can be found at https://en.wikipedia.org/wiki/Semaphore_(programming). Dijkstra
-At sem value = 0 ,P blocks
-At sem value < 0, V unblocks
+At sem value = 0 ,P blocks (decrements on all occasions)
+At sem value < 0, V unblocks (increments on all occasions)
 
 Send and Reply works on non whitespaced strings, any whitespace may cause trouble. i.e S(send) 2(processID) THISMUSTBETHEFORMAT(message)
 
 A sender can send multiple messages to some process and they wont get lost or overwritten.
 
 If a process is blocked on send, any process calling Reply on that process will wake it up instantenously.
-If a process is blocked on receive, any process calling send on that process can wake it up. If Receive has been called after a send process will not block.
+If a process is blocked on receive, any process calling send on that process can wake it up.
+
+Init to get print any message, it needs to call R even if its running.
+

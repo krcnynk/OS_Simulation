@@ -5,12 +5,13 @@ Semaphore implementation can be found at https://en.wikipedia.org/wiki/Semaphore
 At sem value = 0 ,P blocks (decrements on all occasions)
 At sem value < 0, V unblocks (increments on all occasions)
 
-Send and Reply works on non whitespaced strings, any whitespace may cause trouble. i.e S(send) 2(processID) THISMUSTBETHEFORMAT(message)
+Any input followed by gibberish will be count as valid input. "Y123asdcw3" will call Reply for example.
 
-A sender can send multiple messages to some process and they wont get lost or overwritten.
+A sender can send multiple messages to some process and they wont get lost or overwritten(maximum of list nodes).
 
-If a process is blocked on send, any process calling Reply on that process will wake it up instantenously.
-If a process is blocked on receive, any process calling send on that process can wake it up.
+If a process calls Receive but there are non it blocks if there is some messages it will print and carry on. 
+If a process Receives a message while blocked, it will unblock and wait for its turn to run before printing the message
+Sender prints its replies also while running(must wait for its turn).
 
-Init to get print any message, it needs to call R even if its running.
+Init to print any message, it needs to call R even if it is running.
 

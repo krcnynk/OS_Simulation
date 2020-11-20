@@ -170,17 +170,36 @@ int main()
 
     while(1)
     {
-        char ch;
-        scanf("%c",&ch);
-        switch (ch)
+        char ch[100];
+        if(fgets(ch,100,stdin) == NULL)
+        {
+            printf("Error while reading the input\n");
+        }
+        switch (ch[0])
         {
             case 'C':
             {
                 char c[10];
-                char* t;
                 printf("Enter priority 0(HIGH),1(NORMAL),2(LOW)\n");
-                scanf("%s",c);
-
+                if(fgets(c, 10, stdin) == NULL)
+                {
+                    printf("Error while reading characters try again\n");
+                    break;
+                }
+                setbuf(stdin, NULL);
+                for(int i = 0; i < 10;i++)
+                {
+                    if(c[i] < '0' || c[i] > '9')
+                    {
+                        c[i] = '\0';
+                        break;
+                    }
+                }
+                if(c[0] == '\0')
+                {
+                    printf("Error:Input format failure\n");
+                    break;
+                }
                 int input = atoi(c);
 
                 if(input == HIGH || input == NORMAL || input == LOW)
@@ -257,7 +276,25 @@ int main()
             {
                 char c[10];
                 printf("Enter PID of the process to kill.\n");
-                scanf("%s",c);
+                if(fgets(c, 10, stdin) == NULL)
+                {
+                    printf("Error while reading characters try again\n");
+                    break;
+                }
+                setbuf(stdin, NULL);
+                for(int i = 0; i < 10;i++)
+                {
+                    if(c[i] < '0' || c[i] > '9')
+                    {
+                        c[i] = '\0';
+                        break;
+                    }
+                }
+                if(c[0] == '\0')
+                {
+                    printf("Error:Input format failure\n");
+                    break;
+                }
                 int input = atoi(c);
 
                 if(running == NULL)
@@ -349,7 +386,7 @@ int main()
                 break;
             }
 
-            case 'Q': // SO DONE
+            case 'Q': // Quantum
             {
 
                 if(running == NULL)
@@ -388,11 +425,33 @@ int main()
                 char msg[41];
                 char ch;
                 printf("Enter PID of the process\n");
-                scanf("%9s",c);
+                if(fgets(c, 10, stdin) == NULL)
+                {
+                    printf("Error while reading characters try again\n");
+                    break;
+                }
+                setbuf(stdin, NULL);
+                for(int i = 0; i < 10;i++)
+                {
+                    if(c[i] < '0' || c[i] > '9')
+                    {
+                        c[i] = '\0';
+                        break;
+                    }
+                }
 
                 printf("Enter and send message(max 40 chars)\n");
-                scanf("%s",msg);
-
+                if(fgets(msg, 41, stdin) == NULL)
+                {
+                    printf("Error while reading characters try again\n");
+                    break;
+                }
+                setbuf(stdin, NULL);
+                if(c[0] == '\0')
+                {
+                    printf("Error:Input format failure\n");
+                    break;
+                }
                 int input = atoi(c);
 
                 if(running == NULL)
@@ -499,7 +558,7 @@ int main()
                 }
                 break;
             }
-            case 'R': //Receive
+            case 'R':
             {
                 if(running == NULL)
                 {
@@ -510,9 +569,14 @@ int main()
                     else
                     {
                         char* received = List_trim(init_MSG);
-                        printf("Init received message %s\n",received);
-                        if(received != NULL)
-                            free(received);
+                        printf("Init received message\n");
+                        while(received != NULL)
+                        {
+                            printf(" %s ",received);
+                            if(received != NULL)
+                                free(received);
+                            received = List_trim(init_MSG);
+                        }
                     }
                     
                 }
@@ -557,17 +621,40 @@ int main()
             case 'Y': //Reply
             {
                 char c[10];
-                char msg[40];
+                char msg[41];
                 printf("Enter PID of the process\n");
-                scanf("%s",c);
-                printf("Enter and reply message(max 40 chars)\n");
-                scanf("%s",msg);
+                if(fgets(c, 10, stdin) == NULL)
+                {
+                    printf("Error while reading characters try again\n");
+                    break;
+                }
+                setbuf(stdin, NULL);
+                for(int i = 0; i < 10;i++)
+                {
+                    if(c[i] < '0' || c[i] > '9')
+                    {
+                        c[i] = '\0';
+                        break;
+                    }
+                }
 
+                printf("Enter and reply message(max 40 chars)\n");
+                if(fgets(msg, 41, stdin) == NULL)
+                {
+                    printf("Error while reading characters try again\n");
+                    break;
+                }
+                setbuf(stdin, NULL);
+                if(c[0] == '\0')
+                {
+                    printf("Error:Input format failure\n");
+                    break;
+                }
                 int input = atoi(c);
 
                 if(input == 0)
                 {
-                    char* msgMal = malloc(sizeof(char)*40);
+                    char* msgMal = malloc(sizeof(char)*41);
                     strcpy(msgMal,msg);
                     if(List_prepend(init_MSG,msgMal) == -1)
                     {
@@ -633,12 +720,51 @@ int main()
                 char c1[10];
                 char c2[10];
 
+
                 printf("Enter SID of the semaphore\n");
-                scanf("%s",c1);
-                int input1 = atoi(c1);
+                if(fgets(c1, 10, stdin) == NULL)
+                {
+                    printf("Error while reading characters try again\n");
+                    break;
+                }
+                setbuf(stdin, NULL);
+                for(int i = 0; i < 10;i++)
+                {
+                    if(c1[i] < '0' || c1[i] > '9')
+                    {
+
+                        c1[i] = '\0';
+                        break;
+                    }
+                }
 
                 printf("Enter value of the semaphore\n");
-                scanf("%s",c2);
+                if(fgets(c2, 10, stdin) == NULL)
+                {
+                    printf("Error while reading characters try again\n");
+                    break;
+                }
+                setbuf(stdin, NULL);
+                for(int i = 0; i < 10;i++)
+                {
+                    if(c2[i] < '0' || c2[i] > '9')
+                    {
+                        c2[i] = '\0';
+                        break;
+                    }
+                }
+
+                if(c1[0] == '\0')
+                {
+                    printf("Error:Input format failure\n");
+                    break;
+                }
+                if(c2[0] == '\0')
+                {
+                    printf("Error:Input format failure\n");
+                    break;
+                }
+                int input1 = atoi(c1);
                 int input2 = atoi(c2);
 
                 if(input1 < 0 || input1 > 5)
@@ -665,7 +791,25 @@ int main()
             {
                 char c[10];
                 printf("Enter SID of the semaphore\n");
-                scanf("%s",c);
+                if(fgets(c, 10, stdin) == NULL)
+                {
+                    printf("Error while reading characters try again\n");
+                    break;
+                }
+                setbuf(stdin, NULL);
+                for(int i = 0; i < 10;i++)
+                {
+                    if(c[i] < '0' || c[i] > '9')
+                    {
+                        c[i] = '\0';
+                        break;
+                    }
+                }
+                if(c[0] == '\0')
+                {
+                    printf("Error:Input format failure\n");
+                    break;
+                }
                 int input1 = atoi(c);
 
                 if(sem[input1] == NULL)
@@ -713,7 +857,25 @@ int main()
             {
                 char c[10];
                 printf("Enter SID of the semaphore\n");
-                scanf("%s",c);
+                if(fgets(c, 10, stdin) == NULL)
+                {
+                    printf("Error while reading characters try again\n");
+                    break;
+                }
+                setbuf(stdin, NULL);
+                for(int i = 0; i < 10;i++)
+                {
+                    if(c[i] < '0' || c[i] > '9')
+                    {
+                        c[i] = '\0';
+                        break;
+                    }
+                }
+                if(c[0] == '\0')
+                {
+                    printf("Error:Input format failure\n");
+                    break;
+                }
                 int input1 = atoi(c);
                 
                 if(sem[input1] == NULL)
@@ -755,7 +917,25 @@ int main()
             {
                 char c[10];
                 printf("Enter PID of the process\n");
-                scanf("%s",c);
+                if(fgets(c, 10, stdin) == NULL)
+                {
+                    printf("Error while reading characters try again\n");
+                    break;
+                }
+                setbuf(stdin, NULL);
+                for(int i = 0; i < 10;i++)
+                {
+                    if(c[i] < '0' || c[i] > '9')
+                    {
+                        c[i] = '\0';
+                        break;
+                    }
+                }
+                if(c[0] == '\0')
+                {
+                    printf("Error:Input format failure\n");
+                    break;
+                }
                 int input1 = atoi(c);
 
                 if(input1 == 0)
@@ -915,7 +1095,7 @@ int main()
                 printf("Process %d is running now\n",running->PID);
             }    
         }
-        else
+        if(running != NULL)
         {
             if(running->proc_message != NULL)
             {
@@ -925,7 +1105,7 @@ int main()
                     char* rec = List_trim(running->proc_message);
                     if(rec != NULL)
                     {
-                        printf("Running process(Receiver) has received messages:\n");
+                        printf("Running process(was receive blocked) has messages:\n");
                         while(rec != NULL)
                         {
                             printf(" %s ",rec);
@@ -940,7 +1120,7 @@ int main()
                     char* rec = List_trim(running->proc_message);
                     if(rec != NULL)
                     {
-                        printf("Running process(Sender) has replies:\n");
+                        printf("Running process(was send blocked,last message is a reply) has messages:\n");
                         while(rec != NULL)
                         {
                             printf(" %s ",rec);

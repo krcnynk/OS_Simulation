@@ -2,7 +2,7 @@
 Ready queues are FCFS, if there is HIGH priority process in the system it can hog the CPU(will not let any normal or low priority into the system).
 
 Semaphore implementation can be found at https://en.wikipedia.org/wiki/Semaphore_(programming). Dijkstra
-At sem value = 0 ,P blocks (decrements on all occasions)
+At sem value <= 0,P blocks (decrements on all occasions)
 At sem value < 0, V unblocks (increments on all occasions)
 
 Any input followed by gibberish will be count as valid input. "Y123asdcw3" will call Reply for example.

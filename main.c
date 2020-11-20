@@ -476,7 +476,7 @@ int main()
                             }
                             else // If a process is found add message to its list
                             {
-                                char* msgMal = malloc(sizeof(char)*40);
+                                char* msgMal = malloc(sizeof(char)*41);
                                 strcpy(msgMal,msg);
                                 if(List_prepend(ret->proc_message, msgMal) == -1)
                                 {
@@ -495,7 +495,7 @@ int main()
                 {
                     if(input == 0) // running sending to init
                     {
-                        char* msgMal = malloc(sizeof(char)*40);
+                        char* msgMal = malloc(sizeof(char)*41);
                         strcpy(msgMal,msg);
                         if(List_prepend(init_MSG,msgMal) == -1)
                         {
@@ -531,7 +531,7 @@ int main()
                         }
                         else // Found a process in some Q
                         {
-                            char* msgMal = malloc(sizeof(char)*40);
+                            char* msgMal = malloc(sizeof(char)*41);
                             strcpy(msgMal,msg);
                             if(List_prepend(ret->proc_message, msgMal) == -1)
                             {
@@ -680,7 +680,7 @@ int main()
                         {
                             printf("Sender PID: %d has been unblocked and put into %s priority ready queue\n", ret->PID, priorityString[ret->priority]);
 
-                            char* msgMal = malloc(sizeof(char)*40);
+                            char* msgMal = malloc(sizeof(char)*41);
                             strcpy(msgMal,msg);
                             if(List_prepend(ret->proc_message, msgMal) == -1)
                             {
@@ -766,6 +766,12 @@ int main()
                 }
                 int input1 = atoi(c1);
                 int input2 = atoi(c2);
+
+                if(input2 < 0)
+                {
+                    printf("Error:Input value of semaphore cannot be negative\n");
+                    break;
+                }
 
                 if(input1 < 0 || input1 > 5)
                 {
